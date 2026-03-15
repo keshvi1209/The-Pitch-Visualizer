@@ -393,6 +393,12 @@
           <option value="photorealistic">Photorealistic</option>
         </select>
 
+        <select class="style-select" id="llmSelect">
+          <option value="huggingface" selected>Hugging Face</option>
+          <option value="openai">OpenAI (DALL-E 3)</option>
+          <option value="stability">Stability AI</option>
+        </select>
+
         <button class="btn-generate" id="generateBtn">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
             <polygon points="5,3 19,12 5,21"/>
@@ -448,6 +454,7 @@
     // ── DOM refs ────────────────────────────────────────────────
     const narrativeInput = document.getElementById('narrativeInput');
     const styleSelect    = document.getElementById('styleSelect');
+    const llmSelect      = document.getElementById('llmSelect');
     const generateBtn    = document.getElementById('generateBtn');
     const storyboard     = document.getElementById('storyboard');
     const statusStrip    = document.getElementById('statusStrip');
@@ -504,7 +511,7 @@
       setStatus('loading', 'Segmenting narrative…');
       generateBtn.disabled = true;
 
-      const body = JSON.stringify({ text, style: styleSelect.value });
+      const body = JSON.stringify({ text, style: styleSelect.value, llm: llmSelect.value });
 
       // Use fetch+ReadableStream for POST-based SSE
       fetch('/generate', {

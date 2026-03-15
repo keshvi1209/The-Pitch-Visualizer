@@ -25,7 +25,7 @@ HF_MODELS = {
 DEFAULT_MODEL = "flux-schnell"
 
 
-def generate_image(prompt: str, width: int = 768, height: int = 512) -> str:
+def generate_image(prompt: str, width: int = 768, height: int = 512, provider: str = "huggingface") -> str:
     """
     Generate an image from a prompt using HuggingFace Inference API.
 
@@ -38,9 +38,19 @@ def generate_image(prompt: str, width: int = 768, height: int = 512) -> str:
         Base64 data URI string (data:image/png;base64,...)
         Falls back to SVG placeholder on failure.
     """
+    if provider == "openai":
+        result = _call_openai_api(prompt, width, height)
+        if result and not result.startswith("data:image/svg"):
+            return result
+        print("[ImageGen] OpenAI failed — falling back to HuggingFace")
+    elif provider == "stability":
+        result = _call_stability_api(prompt, width, height)
+        if result and not result.startswith("data:image/svg"):
+            return result
+        print("[ImageGen] Stability failed — falling back to HuggingFace")
+
     hf_token = os.getenv("HF_TOKEN")
     print("[ImageGen] HF_TOKEN found:", bool(hf_token))
-    print("[ImageGen] HF_TOKEN found:", hf_token)
 
     if not hf_token:
         print("[ImageGen] No HF_TOKEN found — using placeholder")
@@ -61,7 +71,67 @@ def generate_image(prompt: str, width: int = 768, height: int = 512) -> str:
                 time.sleep(2)
 
     # print("[ImageGen] All models failed — using placeholder")
-    # return _placeholder_svg(prompt)
+    return _placeholder_svg(prompt)
+
+def _call_openai_api(prompt: str, width: int, height: int) -> str:
+    openai_key = os.getenv("OPENAI_API_KEY")
+    print("[ImageGen] OPENAI_API_KEY found:", bool(openai_key))
+    if not openai_key:
+        print("[ImageGen] No OPENAI_API_KEY found")
+        return _placeholder_svg(f"[OpenAI Key Required] {prompt}")
+    
+    try:
+        from openai import OpenAI
+        client = OpenAI(api_key=openai_key)
+        
+        response = client.images.generate(
+            model="dall-e-3",
+            prompt=prompt[:4000],  # DALL-E 3 limit
+            size="1024x1024",
+            quality="standard",
+            response_format="b64_json",
+            n=1,
+        )
+        b64 = response.data[0].b64_json
+        return f"data:image/png;base64,{b64}"
+    except Exception as e:
+        print(f"[ImageGen-OpenAI] Failed: {e}")
+        return _placeholder_svg(prompt)
+
+def _call_stability_api(prompt: str, width: int, height: int) -> str:
+    stability_key = os.getenv("STABILITY_API_KEY")
+    if not stability_key:
+        print("[ImageGen] No STABILITY_API_KEY found")
+        return _placeholder_svg(f"[Stability Key Required] {prompt}")
+    
+    import requests
+    url = "https://api.stability.ai/v1/generation/stable-diffusion-xl-1024-v1-0/text-to-image"
+    headers = {
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+        "Authorization": f"Bearer {stability_key}"
+    }
+    payload = {
+        "text_prompts": [{"text": prompt}],
+        "cfg_scale": 7,
+        "height": 1024,
+        "width": 1024,
+        "samples": 1,
+        "steps": 30
+    }
+    
+    try:
+        response = requests.post(url, headers=headers, json=payload, timeout=60)
+        if response.status_code == 200:
+            data = response.json()
+            if data.get("artifacts"):
+                b64 = data["artifacts"][0]["base64"]
+                return f"data:image/png;base64,{b64}"
+        print(f"[ImageGen-Stability] Failed ({response.status_code}): {response.text}")
+    except Exception as e:
+        print(f"[ImageGen-Stability] Exception: {e}")
+    
+    return _placeholder_svg(prompt)
 
 
 def _call_hf_api(prompt: str, model_id: str, token: str, width: int, height: int) -> Optional[str]:

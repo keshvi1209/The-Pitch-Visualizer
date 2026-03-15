@@ -35,6 +35,7 @@ def generate():
     data = request.get_json(silent=True) or {}
     narrative = (data.get("text") or "").strip()
     style = data.get("style", "cinematic")
+    llm = data.get("llm", "huggingface")
 
     if not narrative:
         return jsonify({"error": "No text provided"}), 400
@@ -62,7 +63,7 @@ def generate():
                 )
                 yield _sse({"type": "prompt", "index": i, "enhanced": enhanced})
 
-                image_data = generate_image(enhanced)
+                image_data = generate_image(enhanced, provider=llm)
                 yield _sse({"type": "image", "index": i, "src": image_data})
 
             yield _sse({"type": "done"})
@@ -84,6 +85,8 @@ def health():
         "status": "ok",
         "gemini_key": bool(os.getenv("GEMINI_API_KEY")),
         "hf_token": bool(os.getenv("HF_TOKEN")),
+        "openai_key": bool(os.getenv("OPENAI_API_KEY")),
+        "stability_key": bool(os.getenv("STABILITY_API_KEY")),
         "template_found": os.path.exists(TEMPLATE_PATH),
         "base_dir": BASE_DIR,
     })
@@ -101,5 +104,7 @@ if __name__ == "__main__":
     print(f"    BASE_DIR: {BASE_DIR}")
     print(f"    Template: {'found' if os.path.exists(TEMPLATE_PATH) else 'MISSING - check templates/index.html'}")
     print(f"    Gemini  : {'set' if os.getenv('GEMINI_API_KEY') else 'missing'}")
-    print(f"    HF Token: {'set' if os.getenv('HF_TOKEN') else 'missing (placeholders)'}\n")
+    print(f"    HF Token: {'set' if os.getenv('HF_TOKEN') else 'missing (placeholders)'}")
+    print(f"    OpenAI  : {'set' if os.getenv('OPENAI_API_KEY') else 'missing'}")
+    print(f"    Stability: {'set' if os.getenv('STABILITY_API_KEY') else 'missing'}\n")
     app.run(host="0.0.0.0", port=port, debug=debug, threaded=True)
