@@ -62,17 +62,13 @@ pip install -r requirements.txt
 
 ### 4. API Key Management
 
-Create a `.env` file in the project root (you can copy `.env.example` if it exists):
+Copy the example env file:
 
 ```bash
-# Windows
-copy .env.example .env
-
-# Linux/macOS
 cp .env.example .env
 ```
 
-Open `.env` and fill in the keys you want to use:
+Add your API keys in `.env` (open the file and fill in the requirements):
 
 ```env
 # --- Prompt Engineering (at least one required) ---

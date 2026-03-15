@@ -3,439 +3,479 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Pitch Visualizer — Narrative to Storyboard</title>
+  <title>Pitch Visualizer — Workspace</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 
   <style>
     /* ── Variables ─────────────────────────────────────────── */
     :root {
-      --bg:         #0a0a0f;
-      --surface:    #111118;
-      --surface2:   #1a1a26;
-      --border:     rgba(255,255,255,0.06);
-      --accent:     #e8c547;
-      --accent2:    #c4773a;
-      --text:       #e8e8f0;
-      --muted:      rgba(232,232,240,0.4);
-      --danger:     #e05050;
-      --radius:     10px;
-      --panel-w:    340px;
+      --bg:           #09090b; /* Zinc 950 */
+      --surface:      #18181b; /* Zinc 900 */
+      --surface2:     #27272a; /* Zinc 800 */
+      --border:       #3f3f46; /* Zinc 700 */
+      --border-hover: #52525b; /* Zinc 600 */
+      --accent:       #14b8a6; /* Teal 500 */
+      --accent-hover: #0d9488; /* Teal 600 */
+      --accent2:      #06b6d4; /* Cyan 500 */
+      --text:         #f4f4f5; /* Zinc 50 */
+      --text-muted:   #a1a1aa; /* Zinc 400 */
+      --danger:       #ef4444; /* Red 500 */
+      --radius-lg:    16px;
+      --radius:       12px;
+      --radius-sm:    8px;
+      --font-sans:    'Inter', sans-serif;
+      --font-mono:    'JetBrains Mono', monospace;
+      --shadow-sm:    0 1px 2px 0 rgb(0 0 0 / 0.05);
+      --shadow:       0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+      --shadow-lg:    0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
     }
 
-    /* ── Reset ─────────────────────────────────────────────── */
+    /* ── Reset & Baseline ──────────────────────────────────── */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     html { scroll-behavior: smooth; }
     body {
-      font-family: 'DM Sans', sans-serif;
+      font-family: var(--font-sans);
       background: var(--bg);
       color: var(--text);
-      min-height: 100vh;
-      overflow-x: hidden;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden; /* Hide main scroll, handle in panels */
+      -webkit-font-smoothing: antialiased;
     }
 
-    /* ── Grain overlay ─────────────────────────────────────── */
-    body::before {
-      content: '';
-      position: fixed; inset: 0; z-index: 0; pointer-events: none;
-      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
-      opacity: 0.03;
-    }
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--surface2); border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--border); }
 
-    /* ── Header ────────────────────────────────────────────── */
+    /* ── Header / Navbar ───────────────────────────────────── */
     header {
-      position: relative; z-index: 1;
+      flex: 0 0 auto;
+      height: 64px;
+      background: rgba(9, 9, 11, 0.85);
+      backdrop-filter: blur(12px);
       display: flex; align-items: center; justify-content: space-between;
-      padding: 20px 40px;
+      padding: 0 32px;
       border-bottom: 1px solid var(--border);
+      z-index: 50;
     }
     .logo {
-      display: flex; align-items: baseline; gap: 10px;
+      display: flex; align-items: center; gap: 12px;
+    }
+    .logo-icon {
+      width: 28px; height: 28px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 0 16px rgba(20, 184, 166, 0.3);
     }
     .logo-text {
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 28px; letter-spacing: 2px;
-      background: linear-gradient(135deg, var(--accent), var(--accent2));
-      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      font-size: 18px; font-weight: 600; letter-spacing: -0.02em;
+      color: var(--text);
     }
-    .logo-sub {
-      font-family: 'DM Mono', monospace;
-      font-size: 10px; letter-spacing: 3px; text-transform: uppercase;
-      color: var(--muted);
+    .nav-links {
+      display: flex; align-items: center; gap: 24px;
+    }
+    .nav-link {
+      color: var(--text-muted); font-size: 14px; font-weight: 500;
+      text-decoration: none; transition: color 0.2s;
+    }
+    .nav-link:hover { color: var(--text); }
+    
+    .health-status {
+      display: flex; align-items: center; gap: 8px;
+      background: var(--surface); padding: 6px 12px; border-radius: 20px;
+      border: 1px solid var(--border);
+      font-size: 12px; font-weight: 500; color: var(--text-muted);
     }
     .health-dot {
       width: 8px; height: 8px; border-radius: 50%;
-      background: #3a3a3a;
-      box-shadow: 0 0 0 0 rgba(80,200,80,0);
-      transition: background 0.3s;
+      background: var(--border); transition: all 0.3s;
     }
     .health-dot.ready {
-      background: #50c878;
-      animation: pulse 2s infinite;
-    }
-    @keyframes pulse {
-      0%   { box-shadow: 0 0 0 0 rgba(80,200,80,0.5); }
-      70%  { box-shadow: 0 0 0 8px rgba(80,200,80,0); }
-      100% { box-shadow: 0 0 0 0 rgba(80,200,80,0); }
+      background: var(--accent);
+      box-shadow: 0 0 8px rgba(20, 184, 166, 0.6);
     }
 
-    /* ── Main layout ───────────────────────────────────────── */
-    main {
-      position: relative; z-index: 1;
-      max-width: 1200px; margin: 0 auto;
-      padding: 48px 40px;
+    /* ── Workspace Layout ──────────────────────────────────── */
+    .workspace {
+      display: flex; flex: 1 1 auto; overflow: hidden;
     }
 
-    /* ── Input section ─────────────────────────────────────── */
-    .input-section {
+    /* ── Left Sidebar (Input Controls) ─────────────────────── */
+    .sidebar {
+      flex: 0 0 420px;
+      background: var(--bg);
+      border-right: 1px solid var(--border);
+      display: flex; flex-direction: column;
+      padding: 32px;
+      overflow-y: auto;
+    }
+    .sidebar-header {
+      margin-bottom: 24px;
+    }
+    .sidebar-title {
+      font-size: 20px; font-weight: 600; margin-bottom: 4px;
+    }
+    .sidebar-subtitle {
+      font-size: 14px; color: var(--text-muted);
+    }
+
+    .form-group {
+      margin-bottom: 24px;
+    }
+    .form-label {
+      font-size: 13px; font-weight: 500; color: var(--text); margin-bottom: 8px;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    
+    textarea {
+      width: 100%; min-height: 180px;
       background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 32px;
-      margin-bottom: 48px;
+      border-radius: var(--radius-sm);
+      color: var(--text);
+      font-family: var(--font-sans);
+      font-size: 14px; line-height: 1.6;
+      padding: 16px;
+      resize: vertical; outline: none;
+      transition: all 0.2s ease;
     }
+    textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(20, 184, 166, 0.15); }
 
-    .section-label {
-      font-family: 'DM Mono', monospace;
-      font-size: 10px; letter-spacing: 3px; text-transform: uppercase;
-      color: var(--accent); margin-bottom: 16px;
-      display: flex; align-items: center; gap: 8px;
-    }
-    .section-label::before {
-      content: ''; display: block;
-      width: 20px; height: 1px; background: var(--accent);
-    }
+    .char-count { font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); }
 
-    textarea {
+    /* Examples Grid */
+    .examples-grid {
+      display: flex; flex-direction: column; gap: 8px; margin-top: 12px;
+    }
+    .example-card {
+      background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm);
+      padding: 12px 16px; cursor: pointer; transition: all 0.2s ease;
+      display: flex; align-items: center; gap: 12px; text-align: left;
+    }
+    .example-card:hover { border-color: var(--accent); background: rgba(20,184,166,0.05); }
+    .example-icon { font-size: 18px; }
+    .example-info { flex: 1; }
+    .example-title { font-size: 13px; font-weight: 500; color: var(--text); margin-bottom: 2px; }
+    .example-desc { font-size: 11px; color: var(--text-muted); line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 1; line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
+
+    /* Dropdowns */
+    .dropdown-row {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
+    }
+    select.styled-select {
       width: 100%;
-      min-height: 140px;
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      color: var(--text);
-      font-family: 'DM Sans', sans-serif;
-      font-size: 15px; line-height: 1.7;
-      padding: 18px 20px;
-      resize: vertical;
-      outline: none;
-      transition: border-color 0.2s;
-    }
-    textarea:focus { border-color: rgba(232,197,71,0.4); }
-    textarea::placeholder { color: var(--muted); }
-
-    .controls {
-      display: flex; gap: 12px; align-items: center;
-      margin-top: 16px; flex-wrap: wrap;
-    }
-
-    .style-select {
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      color: var(--text);
-      font-family: 'DM Mono', monospace;
-      font-size: 12px; letter-spacing: 1px;
-      padding: 10px 16px;
-      outline: none; cursor: pointer;
-      transition: border-color 0.2s;
+      background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm);
+      color: var(--text); font-family: var(--font-sans); font-size: 13px; font-weight: 500;
+      padding: 10px 36px 10px 12px; outline: none; cursor: pointer; transition: all 0.2s;
       appearance: none;
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' fill='none'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23888' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");
-      background-repeat: no-repeat;
-      background-position: right 12px center;
-      padding-right: 36px;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' fill='none'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23a1a1aa' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat; background-position: right 14px center;
     }
-    .style-select:focus { border-color: rgba(232,197,71,0.4); }
+    select.styled-select:focus { border-color: var(--accent); }
 
     .btn-generate {
-      background: linear-gradient(135deg, var(--accent), var(--accent2));
-      border: none; border-radius: var(--radius);
-      color: #0a0a0f;
-      font-family: 'DM Mono', monospace;
-      font-size: 12px; font-weight: 500; letter-spacing: 2px; text-transform: uppercase;
-      padding: 12px 28px;
-      cursor: pointer;
-      transition: opacity 0.2s, transform 0.1s;
-      display: flex; align-items: center; gap: 8px;
+      width: 100%;
+      background: var(--accent); border: none; border-radius: var(--radius-sm); color: #fff;
+      font-family: var(--font-sans); font-size: 14px; font-weight: 600;
+      padding: 14px; cursor: pointer; transition: all 0.2s ease;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      margin-top: auto;
     }
-    .btn-generate:hover { opacity: 0.9; transform: translateY(-1px); }
+    .btn-generate:hover { background: var(--accent-hover); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(20, 184, 166, 0.25); }
     .btn-generate:active { transform: translateY(0); }
-    .btn-generate:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+    .btn-generate:disabled { background: var(--surface2); color: var(--text-muted); cursor: not-allowed; transform: none; box-shadow: none; border: 1px solid var(--border); }
 
-    .char-count {
-      margin-left: auto;
-      font-family: 'DM Mono', monospace;
-      font-size: 11px; color: var(--muted);
+    /* ── Main Output Area (Right Panel) ────────────────────── */
+    .main-area {
+      flex: 1 1 auto;
+      background: #0d0d0f;
+      display: flex; flex-direction: column;
+      position: relative;
+      overflow-y: auto;
+      padding: 40px;
     }
 
-    /* ── Example pills ─────────────────────────────────────── */
-    .examples {
-      margin-top: 14px;
-      display: flex; gap: 8px; flex-wrap: wrap;
+    /* Empty State */
+    .empty-state {
+      position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+      display: flex; flex-direction: column; align-items: center; text-align: center;
+      color: var(--text-muted); max-width: 400px;
     }
-    .example-pill {
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      border-radius: 20px;
-      font-size: 11px; color: var(--muted);
-      padding: 5px 12px; cursor: pointer;
-      transition: all 0.2s;
-      font-family: 'DM Mono', monospace;
-    }
-    .example-pill:hover { border-color: rgba(232,197,71,0.3); color: var(--text); }
+    .empty-state svg { width: 64px; height: 64px; margin-bottom: 24px; opacity: 0.5; stroke: var(--border-hover); }
+    .empty-state h3 { font-size: 18px; font-weight: 600; color: var(--text); margin-bottom: 8px; }
+    .empty-state p { font-size: 14px; line-height: 1.6; }
 
-    /* ── Progress bar ──────────────────────────────────────── */
-    .progress-bar-wrap {
-      height: 2px; background: var(--border);
-      border-radius: 2px; overflow: hidden;
-      margin-bottom: 32px;
-      opacity: 0; transition: opacity 0.3s;
+    /* Progress & Status */
+    .status-container {
+      display: none;
+      background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 24px; margin-bottom: 32px;
+      box-shadow: var(--shadow-sm);
     }
-    .progress-bar-wrap.visible { opacity: 1; }
+    .status-container.visible { display: block; }
+    
+    .status-header {
+      display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;
+    }
+    .status-text { font-size: 14px; font-weight: 500; display: flex; align-items: center; gap: 10px; }
+    .status-text .spinner {
+      width: 16px; height: 16px; border-radius: 50%;
+      border: 2px solid var(--border); border-top-color: var(--accent);
+      animation: spin 0.8s linear infinite;
+    }
+    
+    .progress-track {
+      height: 6px; background: var(--surface2); border-radius: 3px; overflow: hidden;
+    }
     .progress-bar {
-      height: 100%;
-      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent2));
       width: 0%; transition: width 0.4s ease;
     }
 
-    /* ── Status strip ──────────────────────────────────────── */
-    .status-strip {
-      font-family: 'DM Mono', monospace;
-      font-size: 11px; letter-spacing: 1px;
-      color: var(--muted); margin-bottom: 24px;
-      min-height: 18px;
+    /* Storyboard Output */
+    .storyboard-header {
+      display: none; align-items: center; justify-content: space-between; margin-bottom: 24px;
+    }
+    .storyboard-header.visible { display: flex; }
+    .storyboard-title { font-size: 20px; font-weight: 600; }
+    
+    .btn-export {
+      background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm);
+      color: var(--text); font-size: 13px; font-weight: 500;
+      padding: 8px 16px; cursor: pointer; transition: all 0.2s;
       display: flex; align-items: center; gap: 8px;
     }
-    .status-strip .spinner {
-      width: 10px; height: 10px; border-radius: 50%;
-      border: 1.5px solid transparent;
-      border-top-color: var(--accent);
-      animation: spin 0.8s linear infinite;
-      display: none;
-    }
-    .status-strip.loading .spinner { display: block; }
-    @keyframes spin { to { transform: rotate(360deg); } }
+    .btn-export:hover { background: var(--surface2); border-color: var(--border-hover); color: #fff; }
 
-    /* ── Storyboard grid ───────────────────────────────────── */
-    .storyboard-header {
-      display: flex; align-items: center; justify-content: space-between;
-      margin-bottom: 24px;
-    }
-
-    #storyboard {
+    .storyboard-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(var(--panel-w), 1fr));
-      gap: 24px;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 24px;
+      padding-bottom: 40px;
     }
 
-    /* ── Panel card ─────────────────────────────────────────── */
+    /* ── Panel Card ────────────────────────────────────────── */
     .panel-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      overflow: hidden;
-      opacity: 0; transform: translateY(20px);
-      animation: slideIn 0.5s ease forwards;
+      background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+      overflow: hidden; opacity: 0; transform: translateY(10px);
+      animation: slideIn 0.4s ease forwards; box-shadow: var(--shadow-sm); transition: all 0.3s ease;
+      display: flex; flex-direction: column;
     }
-    @keyframes slideIn {
-      to { opacity: 1; transform: translateY(0); }
-    }
+    .panel-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-lg); border-color: var(--border-hover); }
+    @keyframes slideIn { to { opacity: 1; transform: translateY(0); } }
 
-    .panel-num {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 12px 16px;
-      border-bottom: 1px solid var(--border);
-    }
-    .panel-num-badge {
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 18px; letter-spacing: 2px;
-      color: var(--accent);
-    }
-    .panel-status-badge {
-      font-family: 'DM Mono', monospace;
-      font-size: 9px; letter-spacing: 2px; text-transform: uppercase;
-      padding: 3px 8px; border-radius: 4px;
-    }
-    .badge-loading { background: rgba(232,197,71,0.1); color: var(--accent); }
-    .badge-ready   { background: rgba(80,200,120,0.1); color: #50c878; }
-
-    /* Image container */
     .panel-img-wrap {
-      position: relative; aspect-ratio: 3/2; overflow: hidden;
-      background: var(--surface2);
+      position: relative; aspect-ratio: 16/9; overflow: hidden; background: var(--bg); border-bottom: 1px solid var(--border);
     }
     .panel-img-wrap img {
-      width: 100%; height: 100%; object-fit: cover;
-      display: block;
-      transition: transform 0.4s ease;
+      width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.5s ease;
     }
     .panel-card:hover .panel-img-wrap img { transform: scale(1.03); }
 
-    /* Skeleton loader */
     .skeleton {
       width: 100%; height: 100%;
-      background: linear-gradient(90deg,
-        var(--surface2) 25%, var(--surface) 50%, var(--surface2) 75%);
-      background-size: 200% 100%;
-      animation: shimmer 1.4s infinite;
+      background: linear-gradient(90deg, var(--bg) 25%, var(--surface2) 50%, var(--bg) 75%);
+      background-size: 200% 100%; animation: shimmer 1.5s infinite linear;
     }
-    @keyframes shimmer { to { background-position: -200% 0; } }
 
-    /* Panel body */
-    .panel-body { padding: 16px; }
+    .panel-body { padding: 20px; flex: 1; display: flex; flex-direction: column; }
+    
+    .panel-meta {
+      display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;
+    }
+    .panel-num { font-family: var(--font-mono); font-size: 11px; font-weight: 600; color: var(--accent); letter-spacing: 0.5px; }
+    .panel-badge {
+      font-size: 10px; font-weight: 600; padding: 2px 6px; border-radius: 4px; text-transform: uppercase;
+      background: rgba(20, 184, 166, 0.1); color: var(--accent); border: 1px solid rgba(20, 184, 166, 0.2);
+    }
+    .panel-badge.ready { background: rgba(6, 182, 212, 0.1); color: var(--accent2); border-color: rgba(6, 182, 212, 0.2); }
 
     .panel-scene-text {
-      font-size: 13px; line-height: 1.6; color: var(--text);
-      margin-bottom: 12px;
+      font-size: 14px; line-height: 1.6; color: var(--text); margin-bottom: 16px; flex: 1;
     }
 
     .prompt-toggle {
-      font-family: 'DM Mono', monospace;
-      font-size: 10px; letter-spacing: 1px; text-transform: uppercase;
-      color: var(--muted); cursor: pointer;
-      display: flex; align-items: center; gap: 6px;
-      user-select: none;
-      background: none; border: none; padding: 0;
+      font-family: var(--font-sans); font-size: 12px; font-weight: 500; color: var(--text-muted);
+      cursor: pointer; display: flex; align-items: center; gap: 6px; user-select: none;
+      background: none; border: none; padding: 0; transition: color 0.2s; margin-top: auto;
     }
     .prompt-toggle:hover { color: var(--text); }
-    .prompt-toggle .arrow { transition: transform 0.2s; }
+    .prompt-toggle .arrow { transition: transform 0.2s; font-size: 10px; }
     .prompt-toggle.open .arrow { transform: rotate(90deg); }
 
     .prompt-detail {
-      display: none; margin-top: 10px;
-      background: var(--surface2);
-      border-left: 2px solid rgba(232,197,71,0.3);
-      border-radius: 0 6px 6px 0;
-      padding: 10px 14px;
-      font-family: 'DM Mono', monospace;
-      font-size: 11px; line-height: 1.6;
-      color: var(--muted);
+      display: none; margin-top: 12px; background: var(--bg); border: 1px solid var(--border); border-left: 2px solid var(--accent);
+      border-radius: var(--radius-sm); padding: 12px; font-family: var(--font-mono); font-size: 11px; line-height: 1.5; color: var(--text-muted);
     }
     .prompt-detail.open { display: block; }
 
-    /* ── Export button ──────────────────────────────────────── */
-    .btn-export {
-      background: transparent;
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      color: var(--muted);
-      font-family: 'DM Mono', monospace;
-      font-size: 11px; letter-spacing: 1px; text-transform: uppercase;
-      padding: 8px 16px; cursor: pointer;
-      transition: all 0.2s;
-      display: none;
-    }
-    .btn-export.visible { display: flex; align-items: center; gap: 6px; }
-    .btn-export:hover { border-color: rgba(232,197,71,0.3); color: var(--text); }
-
-    /* ── Error toast ────────────────────────────────────────── */
+    /* ── Toast ─────────────────────────────────────────────── */
     .toast {
       position: fixed; bottom: 32px; right: 32px; z-index: 100;
-      background: var(--surface);
-      border: 1px solid rgba(224,80,80,0.3);
-      border-left: 3px solid var(--danger);
-      border-radius: var(--radius);
-      padding: 14px 18px;
-      font-size: 13px; color: var(--text);
-      box-shadow: 0 8px 32px rgba(0,0,0,0.5);
-      transform: translateX(120%);
-      transition: transform 0.3s ease;
-      max-width: 320px;
+      background: var(--surface); border: 1px solid var(--border); border-left: 4px solid var(--danger);
+      border-radius: var(--radius-sm); padding: 16px 20px; font-size: 14px; font-weight: 500; color: var(--text);
+      box-shadow: var(--shadow-lg); transform: translateX(120%); transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); max-width: 360px;
     }
     .toast.show { transform: translateX(0); }
 
-    /* ── Responsive ─────────────────────────────────────────── */
-    @media (max-width: 640px) {
-      main { padding: 24px 20px; }
-      header { padding: 16px 20px; }
-      .logo-text { font-size: 22px; }
-      :root { --panel-w: 280px; }
+    /* ── Responsive ────────────────────────────────────────── */
+    @media (max-width: 1024px) {
+      .workspace { flex-direction: column; overflow-y: auto; }
+      .sidebar { flex: none; width: 100%; border-right: none; border-bottom: 1px solid var(--border); }
+      .main-area { flex: none; min-height: 500px; padding: 24px; overflow-y: visible; }
+      body { overflow: auto; }
     }
   </style>
 </head>
 
 <body>
-  <!-- ── Header ─────────────────────────────────────────────── -->
+  <!-- ── Header / Navbar ───────────────────────────────────── -->
   <header>
     <div class="logo">
-      <span class="logo-text">PITCH VISUALIZER</span>
-      <span class="logo-sub">Narrative → Storyboard</span>
+      <div class="logo-icon">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="5 3 19 12 5 21"/>
+        </svg>
+      </div>
+      <span class="logo-text">PitchVisualizer</span>
     </div>
-    <div class="health-dot" id="healthDot" title="API status"></div>
+    <div class="nav-links">
+     
+      <div class="health-status" title="System Status: Checking...">
+        <div class="health-dot" id="healthDot"></div>
+        <span id="healthText">Status</span>
+      </div>
+    </div>
   </header>
 
-  <!-- ── Main ───────────────────────────────────────────────── -->
-  <main>
-
-    <!-- Input card -->
-    <div class="input-section">
-      <div class="section-label">Your Narrative</div>
-
-      <textarea id="narrativeInput"
-        placeholder="Paste your customer success story or sales narrative here (3–6 sentences works best)…"
-        rows="6"></textarea>
-
-      <div class="examples">
-        <span class="section-label" style="margin-bottom:0; align-self:center;">Try:</span>
-        <button class="example-pill" data-idx="0">☕ Coffee startup</button>
-        <button class="example-pill" data-idx="1">🤖 AI platform</button>
-        <button class="example-pill" data-idx="2">🌱 Sustainability</button>
+  <!-- ── Workspace Layout ──────────────────────────────────── -->
+  <div class="workspace">
+    
+    <!-- Left Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <h2 class="sidebar-title">New Storyboard</h2>
+        <p class="sidebar-subtitle">Transform your narrative into visual scenes.</p>
       </div>
 
-      <div class="controls">
-        <select class="style-select" id="styleSelect">
-          <option value="cinematic" selected>Cinematic</option>
-          <option value="digital art">Digital Art</option>
-          <option value="watercolor">Watercolor</option>
-          <option value="flat design">Flat Design</option>
-          <option value="noir">Noir</option>
-          <option value="isometric">Isometric</option>
-          <option value="anime">Anime</option>
-          <option value="photorealistic">Photorealistic</option>
-        </select>
-
-        <select class="style-select" id="llmSelect">
-          <option value="huggingface" selected>Hugging Face</option>
-          <option value="openai">OpenAI (DALL-E 3)</option>
-          <option value="stability">Stability AI</option>
-        </select>
-
-        <button class="btn-generate" id="generateBtn">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-            <polygon points="5,3 19,12 5,21"/>
-          </svg>
-          Generate Storyboard
-        </button>
-
-        <span class="char-count" id="charCount">0 / 1200</span>
+      <div class="form-group">
+        <label class="form-label">
+          Narrative Input
+          <span class="char-count" id="charCount">0 / 1200</span>
+        </label>
+        <textarea id="narrativeInput" placeholder="Paste your customer success story, sales pitch, or narrative here (3–6 sentences recommended)…"></textarea>
       </div>
-    </div>
 
-    <!-- Progress -->
-    <div class="progress-bar-wrap" id="progressWrap">
-      <div class="progress-bar" id="progressBar"></div>
-    </div>
-
-    <!-- Status -->
-    <div class="status-strip" id="statusStrip">
-      <div class="spinner"></div>
-      <span id="statusText"></span>
-    </div>
-
-    <!-- Storyboard -->
-    <div class="storyboard-header">
-      <div class="section-label" id="boardLabel" style="display:none; margin-bottom:0">
-        Storyboard
+      <div class="form-group">
+        <label class="form-label">Templates & Examples</label>
+        <div class="examples-grid">
+          <div class="example-card" data-idx="0">
+            <div class="example-icon">☕</div>
+            <div class="example-info">
+              <div class="example-title">Coffee Startup</div>
+              <div class="example-desc">B2B SaaS automation for wholesale orders</div>
+            </div>
+          </div>
+          <div class="example-card" data-idx="1">
+            <div class="example-icon">🤖</div>
+            <div class="example-info">
+              <div class="example-title">MLOps Migration</div>
+              <div class="example-desc">Cloud infrastructure and engineering bandwidth</div>
+            </div>
+          </div>
+          <div class="example-card" data-idx="2">
+            <div class="example-icon">🌱</div>
+            <div class="example-info">
+              <div class="example-title">AgriTech Yield</div>
+              <div class="example-desc">Precision AI sensors reducing water consumption</div>
+            </div>
+          </div>
+        </div>
       </div>
-      <button class="btn-export" id="exportBtn">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/>
+
+      <div class="form-group dropdown-row">
+        <div>
+          <label class="form-label">Visual Style</label>
+          <select class="styled-select" id="styleSelect">
+            <option value="cinematic" selected>Cinematic</option>
+            <option value="digital art">Digital Art</option>
+            <option value="watercolor">Watercolor</option>
+            <option value="flat design">Flat Design</option>
+            <option value="noir">Noir</option>
+            <option value="isometric">Isometric</option>
+            <option value="anime">Anime</option>
+            <option value="photorealistic">Photorealistic</option>
+          </select>
+        </div>
+        <div>
+          <label class="form-label">Image Provider</label>
+          <select class="styled-select" id="llmSelect">
+            <option value="huggingface" selected>Hugging Face</option>
+            <option value="openai">OpenAI (DALL-E 3)</option>
+            <option value="stability">Stability AI</option>
+          </select>
+        </div>
+      </div>
+
+      <button class="btn-generate" id="generateBtn">
+        Generate Visuals
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+          <polyline points="12 5 19 12 12 19"></polyline>
         </svg>
-        Export HTML
       </button>
-    </div>
+    </aside>
 
-    <div id="storyboard"></div>
-  </main>
+    <!-- Right Main Area -->
+    <main class="main-area" id="mainArea">
+      
+      <!-- Empty State -->
+      <div class="empty-state" id="emptyState">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+          <circle cx="8.5" cy="8.5" r="1.5"></circle>
+          <polyline points="21 15 16 10 5 21"></polyline>
+        </svg>
+        <h3>No Storyboard Generated</h3>
+        <p>Select an example from the sidebar or paste your own narrative to create a stunning visual storyboard.</p>
+      </div>
+
+      <!-- Generation Status -->
+      <div class="status-container" id="statusContainer">
+        <div class="status-header">
+          <div class="status-text" id="statusText">
+            <div class="spinner"></div>
+            <span>Initializing generation...</span>
+          </div>
+          <div class="panel-num" style="color:var(--text-muted)" id="statusCounter">0 / 0 Panels</div>
+        </div>
+        <div class="progress-track">
+          <div class="progress-bar" id="progressBar"></div>
+        </div>
+      </div>
+
+      <!-- Storyboard Result Header -->
+      <div class="storyboard-header" id="storyboardHeader">
+        <h3 class="storyboard-title">Generated Storyboard</h3>
+        <button class="btn-export" id="exportBtn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="7 10 12 15 17 10"/>
+            <line x1="12" y1="15" x2="12" y2="3"/>
+          </svg>
+          Export HTML
+        </button>
+      </div>
+
+      <!-- Storyboard Grid -->
+      <div class="storyboard-grid" id="storyboard"></div>
+
+    </main>
+  </div>
 
   <!-- Toast -->
   <div class="toast" id="toast"></div>
@@ -456,41 +496,54 @@
     const styleSelect    = document.getElementById('styleSelect');
     const llmSelect      = document.getElementById('llmSelect');
     const generateBtn    = document.getElementById('generateBtn');
-    const storyboard     = document.getElementById('storyboard');
-    const statusStrip    = document.getElementById('statusStrip');
-    const statusText     = document.getElementById('statusText');
-    const progressWrap   = document.getElementById('progressWrap');
-    const progressBar    = document.getElementById('progressBar');
+    
+    // Main area elements
+    const emptyState       = document.getElementById('emptyState');
+    const statusContainer  = document.getElementById('statusContainer');
+    const statusText       = document.getElementById('statusText');
+    const statusCounter    = document.getElementById('statusCounter');
+    const progressBar      = document.getElementById('progressBar');
+    const storyboardHeader = document.getElementById('storyboardHeader');
+    const storyboard       = document.getElementById('storyboard');
+    const exportBtn        = document.getElementById('exportBtn');
+    
+    // Global elements
     const charCount      = document.getElementById('charCount');
-    const exportBtn      = document.getElementById('exportBtn');
-    const boardLabel     = document.getElementById('boardLabel');
     const toast          = document.getElementById('toast');
     const healthDot      = document.getElementById('healthDot');
+    const healthText     = document.getElementById('healthText');
 
     let totalPanels = 0;
     let completedPanels = 0;
-    let panelData = [];   // { text, prompt, src }
+    let panelData = [];
 
     // ── Char counter ─────────────────────────────────────────────
     narrativeInput.addEventListener('input', () => {
       const l = narrativeInput.value.length;
       charCount.textContent = `${l} / 1200`;
-      if (l > 1200) charCount.style.color = '#e05050';
-      else charCount.style.color = 'var(--muted)';
+      if (l > 1200) charCount.style.color = 'var(--danger)';
+      else charCount.style.color = 'var(--text-muted)';
     });
 
-    // ── Example pills ─────────────────────────────────────────────
-    document.querySelectorAll('.example-pill').forEach(pill => {
-      pill.addEventListener('click', () => {
-        narrativeInput.value = EXAMPLES[+pill.dataset.idx];
+    // ── Example cards ─────────────────────────────────────────────
+    document.querySelectorAll('.example-card').forEach(card => {
+      card.addEventListener('click', () => {
+        narrativeInput.value = EXAMPLES[+card.dataset.idx];
         narrativeInput.dispatchEvent(new Event('input'));
       });
     });
 
     // ── Health check ─────────────────────────────────────────────
     fetch('/health').then(r => r.json()).then(d => {
-      if (d.anthropic_key || d.hf_token) healthDot.classList.add('ready');
-    }).catch(() => {});
+      if (d.anthropic_key || d.hf_token || d.gemini_key) {
+        healthDot.classList.add('ready');
+        healthText.textContent = "API Ready";
+      } else {
+        healthText.textContent = "No API Configured";
+      }
+    }).catch(() => {
+        healthText.textContent = "Offline";
+    });
 
     // ── Generate ─────────────────────────────────────────────────
     generateBtn.addEventListener('click', startGeneration);
@@ -504,16 +557,18 @@
       storyboard.innerHTML = '';
       panelData = [];
       totalPanels = 0; completedPanels = 0;
-      exportBtn.classList.remove('visible');
-      boardLabel.style.display = 'none';
-      progressWrap.classList.add('visible');
+      
+      emptyState.style.display = 'none';
+      storyboardHeader.classList.remove('visible');
+      statusContainer.classList.add('visible');
+      
       progressBar.style.width = '5%';
-      setStatus('loading', 'Segmenting narrative…');
+      statusText.innerHTML = '<div class="spinner"></div> <span>Segmenting narrative…</span>';
+      statusCounter.textContent = 'Preparing...';
       generateBtn.disabled = true;
 
       const body = JSON.stringify({ text, style: styleSelect.value, llm: llmSelect.value });
 
-      // Use fetch+ReadableStream for POST-based SSE
       fetch('/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -539,7 +594,7 @@
         }
         pump();
       }).catch(err => {
-        setStatus('', 'Error connecting to server.');
+        statusText.innerHTML = '<span>Error connecting to server.</span>';
         generateBtn.disabled = false;
         showToast('Connection error: ' + err.message);
       });
@@ -549,10 +604,11 @@
       switch (evt.type) {
         case 'start':
           totalPanels = evt.total;
-          setStatus('loading', `Generating ${totalPanels} panels in ${evt.style} style…`);
+          statusText.innerHTML = `<div class="spinner"></div> <span>Generating layout for ${totalPanels} panels…</span>`;
+          statusCounter.textContent = `0 / ${totalPanels} Panels`;
           progressBar.style.width = '10%';
-          boardLabel.style.display = 'flex';
-          // Pre-create skeleton cards
+          storyboardHeader.classList.add('visible');
+          
           for (let i = 0; i < totalPanels; i++) {
             panelData.push({ text: '', prompt: '', src: '' });
             storyboard.appendChild(buildSkeletonCard(i));
@@ -565,27 +621,30 @@
 
         case 'prompt':
           updatePanelPrompt(evt.index, evt.enhanced);
-          setStatus('loading', `Panel ${evt.index + 1} of ${totalPanels} — engineering prompt…`);
+          statusText.innerHTML = `<div class="spinner"></div> <span>Engineering prompt for Panel ${evt.index + 1}…</span>`;
           break;
 
         case 'image':
           updatePanelImage(evt.index, evt.src);
           completedPanels++;
-          const pct = 10 + (completedPanels / totalPanels) * 88;
+          const pct = 10 + (completedPanels / totalPanels) * 90;
           progressBar.style.width = pct + '%';
-          setStatus('loading', `Panel ${completedPanels} of ${totalPanels} complete`);
+          statusText.innerHTML = `<div class="spinner"></div> <span>Rendering images…</span>`;
+          statusCounter.textContent = `${completedPanels} / ${totalPanels} Panels`;
           break;
 
         case 'done':
           progressBar.style.width = '100%';
-          setTimeout(() => progressWrap.classList.remove('visible'), 800);
-          setStatus('', `✓ ${totalPanels} panels generated`);
+          statusText.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> <span>Generation Complete</span>`;
           generateBtn.disabled = false;
-          exportBtn.classList.add('visible');
+          
+          setTimeout(() => {
+            statusContainer.classList.remove('visible');
+          }, 2000);
           break;
 
         case 'error':
-          setStatus('', `Error: ${evt.message}`);
+          statusText.innerHTML = `<span style="color:var(--danger)">Error: ${evt.message}</span>`;
           generateBtn.disabled = false;
           showToast(evt.message);
           break;
@@ -598,15 +657,16 @@
       card.className = 'panel-card';
       card.id = `panel-${i}`;
       card.innerHTML = `
-        <div class="panel-num">
-          <span class="panel-num-badge">PANEL ${i + 1}</span>
-          <span class="panel-status-badge badge-loading">Generating…</span>
-        </div>
         <div class="panel-img-wrap"><div class="skeleton"></div></div>
         <div class="panel-body">
+          <div class="panel-meta">
+            <span class="panel-num">PANEL ${i + 1}</span>
+            <span class="panel-badge">Wait</span>
+          </div>
           <div class="panel-scene-text" id="scene-text-${i}">
-            <div class="skeleton" style="height:14px; border-radius:4px; margin-bottom:8px"></div>
-            <div class="skeleton" style="height:14px; border-radius:4px; width:70%"></div>
+            <div class="skeleton" style="height:14px; border-radius:4px; margin-bottom:10px"></div>
+            <div class="skeleton" style="height:14px; border-radius:4px; width:75%; margin-bottom:10px"></div>
+            <div class="skeleton" style="height:14px; border-radius:4px; width:50%"></div>
           </div>
         </div>`;
       return card;
@@ -623,23 +683,26 @@
       const card = document.getElementById(`panel-${i}`);
       if (!card) return;
       const body = card.querySelector('.panel-body');
-      // Add prompt toggle if not already there
-      if (!body.querySelector('.prompt-toggle')) {
-        const toggle = document.createElement('button');
-        toggle.className = 'prompt-toggle';
-        toggle.innerHTML = `<span class="arrow">▶</span> AI Prompt`;
-        const detail = document.createElement('div');
-        detail.className = 'prompt-detail';
-        detail.id = `prompt-detail-${i}`;
-        toggle.addEventListener('click', () => {
-          detail.classList.toggle('open');
-          toggle.classList.toggle('open');
-        });
-        body.appendChild(toggle);
-        body.appendChild(detail);
-      }
-      const detail = document.getElementById(`prompt-detail-${i}`);
-      if (detail) detail.textContent = prompt;
+      
+      const toggle = document.createElement('button');
+      toggle.className = 'prompt-toggle';
+      toggle.innerHTML = `<span class="arrow">▶</span> Inspect AI Prompt`;
+      
+      const detail = document.createElement('div');
+      detail.className = 'prompt-detail';
+      detail.id = `prompt-detail-${i}`;
+      detail.textContent = prompt;
+
+      toggle.addEventListener('click', () => {
+        detail.classList.toggle('open');
+        toggle.classList.toggle('open');
+      });
+      
+      body.appendChild(toggle);
+      body.appendChild(detail);
+      
+      const badge = card.querySelector('.panel-badge');
+      if(badge) { badge.textContent = 'Generating'; badge.style.color = '#eab308'; badge.style.borderColor = 'rgba(234,179,8,0.3)'; badge.style.background = 'rgba(234,179,8,0.1)'; }
     }
 
     function updatePanelImage(i, src) {
@@ -647,7 +710,7 @@
       const card = document.getElementById(`panel-${i}`);
       if (!card) return;
       const wrap = card.querySelector('.panel-img-wrap');
-      const badge = card.querySelector('.panel-status-badge');
+      const badge = card.querySelector('.panel-badge');
       if (wrap) {
         const img = document.createElement('img');
         img.src = src;
@@ -657,8 +720,9 @@
         wrap.appendChild(img);
       }
       if (badge) {
-        badge.textContent = 'Ready';
-        badge.className = 'panel-status-badge badge-ready';
+        badge.textContent = 'Done';
+        badge.className = 'panel-badge ready';
+        badge.style = ''; // reset inline styles
       }
     }
 
@@ -669,10 +733,12 @@
       const style = styleSelect.value;
       let panels = panelData.map((p, i) => `
         <div class="panel">
-          <div class="panel-num">Panel ${i + 1}</div>
-          <img src="${p.src}" alt="Panel ${i + 1}" />
+          <div class="panel-img">
+            <img src="${p.src}" alt="Panel ${i + 1}" />
+            <div class="panel-num">PANEL ${i + 1}</div>
+          </div>
           <div class="caption">${escHtml(p.text)}</div>
-          <details><summary>AI Prompt</summary><p class="prompt-text">${escHtml(p.prompt)}</p></details>
+          <details><summary>AI Generation Prompt</summary><p class="prompt-text">${escHtml(p.prompt)}</p></details>
         </div>`).join('');
 
       const html = `<!DOCTYPE html>
@@ -681,23 +747,28 @@
   <meta charset="UTF-8">
   <title>Pitch Storyboard — ${style}</title>
   <style>
-    body { font-family: Georgia, serif; background: #0d0d14; color: #e8e8f0; margin: 0; padding: 40px; }
-    h1 { font-size: 32px; letter-spacing: 4px; text-transform: uppercase; color: #e8c547; margin-bottom: 8px; }
-    .meta { color: rgba(232,232,240,0.4); font-size: 12px; font-family: monospace; margin-bottom: 40px; }
-    .storyboard { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px,1fr)); gap: 24px; }
-    .panel { background: #111118; border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; overflow: hidden; }
-    .panel-num { padding: 10px 14px; font-family: monospace; font-size: 12px; color: #e8c547; border-bottom: 1px solid rgba(255,255,255,0.06); }
-    .panel img { width:100%; display:block; aspect-ratio:3/2; object-fit:cover; }
-    .caption { padding: 14px; font-size: 13px; line-height:1.6; }
-    details { padding: 0 14px 14px; }
-    summary { font-size: 11px; font-family:monospace; color: rgba(232,232,240,0.4); cursor:pointer; }
-    .prompt-text { font-family:monospace; font-size:11px; color:rgba(232,232,240,0.5); margin-top:6px; line-height:1.6; }
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+    body { font-family: 'Inter', sans-serif; background: #09090b; color: #f4f4f5; margin: 0; padding: 48px; }
+    .container { max-width: 1200px; margin: 0 auto; }
+    h1 { font-size: 28px; font-weight: 600; color: #14b8a6; margin-bottom: 8px; letter-spacing:-0.02em; }
+    .meta { color: #a1a1aa; font-size: 13px; margin-bottom: 48px; border-bottom: 1px solid #27272a; padding-bottom: 24px; }
+    .storyboard { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px,1fr)); gap: 32px; }
+    .panel { background: #18181b; border: 1px solid #27272a; border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; }
+    .panel-img { position: relative; border-bottom: 1px solid #27272a; }
+    .panel img { width:100%; display:block; aspect-ratio:16/9; object-fit:cover; }
+    .panel-num { position: absolute; top: 12px; left: 12px; background: rgba(9,9,11,0.8); backdrop-filter: blur(4px); padding: 4px 10px; border-radius: 6px; font-family: monospace; font-size: 11px; font-weight: 600; color: #14b8a6; border: 1px solid rgba(20,184,166,0.3); }
+    .caption { padding: 20px; font-size: 14px; line-height:1.6; color: #e4e4e7; flex: 1; }
+    details { padding: 0 20px 20px; }
+    summary { font-size: 12px; font-weight:500; color: #a1a1aa; cursor:pointer; }
+    .prompt-text { font-family:monospace; font-size:12px; color:#a1a1aa; margin-top:12px; background:#09090b; padding:12px; border-radius:6px; border-left:2px solid #14b8a6; line-height:1.5; }
   </style>
 </head>
 <body>
-  <h1>Pitch Storyboard</h1>
-  <div class="meta">Style: ${style} &nbsp;·&nbsp; Panels: ${panelData.length} &nbsp;·&nbsp; Generated: ${new Date().toLocaleString()}</div>
-  <div class="storyboard">${panels}</div>
+  <div class="container">
+    <h1>Pitch Storyboard</h1>
+    <div class="meta">Visual Style: <span style="color:#fff">${style}</span> &nbsp;·&nbsp; Panels: <span style="color:#fff">${panelData.length}</span> &nbsp;·&nbsp; Generated: ${new Date().toLocaleString()}</div>
+    <div class="storyboard">${panels}</div>
+  </div>
 </body>
 </html>`;
 
@@ -709,11 +780,6 @@
     }
 
     // ── Helpers ───────────────────────────────────────────────────
-    function setStatus(mode, msg) {
-      statusText.textContent = msg;
-      statusStrip.className = 'status-strip' + (mode === 'loading' ? ' loading' : '');
-    }
-
     function showToast(msg) {
       toast.textContent = msg;
       toast.classList.add('show');
