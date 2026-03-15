@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Pitch Visualizer — Narrative to Storyboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+
+  <style>
+    /* ── Variables ─────────────────────────────────────────── */
+    :root {
+      --bg:         #0a0a0f;
+      --surface:    #111118;
+      --surface2:   #1a1a26;
+      --border:     rgba(255,255,255,0.06);
+      --accent:     #e8c547;
+      --accent2:    #c4773a;
+      --text:       #e8e8f0;
+      --muted:      rgba(232,232,240,0.4);
+      --danger:     #e05050;
+      --radius:     10px;
+      --panel-w:    340px;
+    }
+
+    /* ── Reset ─────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ── Grain overlay ─────────────────────────────────────── */
+    body::before {
+      content: '';
+      position: fixed; inset: 0; z-index: 0; pointer-events: none;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+      opacity: 0.03;
+    }
+
+    /* ── Header ────────────────────────────────────────────── */
+    header {
+      position: relative; z-index: 1;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 20px 40px;
+      border-bottom: 1px solid var(--border);
+    }
+    .logo {
+      display: flex; align-items: baseline; gap: 10px;
+    }
+    .logo-text {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 28px; letter-spacing: 2px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .logo-sub {
+      font-family: 'DM Mono', monospace;
+      font-size: 10px; letter-spacing: 3px; text-transform: uppercase;
+      color: var(--muted);
+    }
+    .health-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: #3a3a3a;
+      box-shadow: 0 0 0 0 rgba(80,200,80,0);
+      transition: background 0.3s;
+    }
+    .health-dot.ready {
+      background: #50c878;
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0%   { box-shadow: 0 0 0 0 rgba(80,200,80,0.5); }
+      70%  { box-shadow: 0 0 0 8px rgba(80,200,80,0); }
+      100% { box-shadow: 0 0 0 0 rgba(80,200,80,0); }
+    }
+
+    /* ── Main layout ───────────────────────────────────────── */
+    main {
+      position: relative; z-index: 1;
+      max-width: 1200px; margin: 0 auto;
+      padding: 48px 40px;
+    }
+
+    /* ── Input section ─────────────────────────────────────── */
+    .input-section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 32px;
+      margin-bottom: 48px;
+    }
+
+    .section-label {
+      font-family: 'DM Mono', monospace;
+      font-size: 10px; letter-spacing: 3px; text-transform: uppercase;
+      color: var(--accent); margin-bottom: 16px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .section-label::before {
+      content: ''; display: block;
+      width: 20px; height: 1px; background: var(--accent);
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 140px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 15px; line-height: 1.7;
+      padding: 18px 20px;
+      resize: vertical;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    textarea:focus { border-color: rgba(232,197,71,0.4); }
+    textarea::placeholder { color: var(--muted); }
+
+    .controls {
+      display: flex; gap: 12px; align-items: center;
+      margin-top: 16px; flex-wrap: wrap;
+    }
+
+    .style-select {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text);
+      font-family: 'DM Mono', monospace;
+      font-size: 12px; letter-spacing: 1px;
+      padding: 10px 16px;
+      outline: none; cursor: pointer;
+      transition: border-color 0.2s;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' fill='none'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23888' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 12px center;
+      padding-right: 36px;
+    }
+    .style-select:focus { border-color: rgba(232,197,71,0.4); }
+
+    .btn-generate {
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border: none; border-radius: var(--radius);
+      color: #0a0a0f;
+      font-family: 'DM Mono', monospace;
+      font-size: 12px; font-weight: 500; letter-spacing: 2px; text-transform: uppercase;
+      padding: 12px 28px;
+      cursor: pointer;
+      transition: opacity 0.2s, transform 0.1s;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .btn-generate:hover { opacity: 0.9; transform: translateY(-1px); }
+    .btn-generate:active { transform: translateY(0); }
+    .btn-generate:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+    .char-count {
+      margin-left: auto;
+      font-family: 'DM Mono', monospace;
+      font-size: 11px; color: var(--muted);
+    }
+
+    /* ── Example pills ─────────────────────────────────────── */
+    .examples {
+      margin-top: 14px;
+      display: flex; gap: 8px; flex-wrap: wrap;
+    }
+    .example-pill {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      font-size: 11px; color: var(--muted);
+      padding: 5px 12px; cursor: pointer;
+      transition: all 0.2s;
+      font-family: 'DM Mono', monospace;
+    }
+    .example-pill:hover { border-color: rgba(232,197,71,0.3); color: var(--text); }
+
+    /* ── Progress bar ──────────────────────────────────────── */
+    .progress-bar-wrap {
+      height: 2px; background: var(--border);
+      border-radius: 2px; overflow: hidden;
+      margin-bottom: 32px;
+      opacity: 0; transition: opacity 0.3s;
+    }
+    .progress-bar-wrap.visible { opacity: 1; }
+    .progress-bar {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      width: 0%; transition: width 0.4s ease;
+    }
+
+    /* ── Status strip ──────────────────────────────────────── */
+    .status-strip {
+      font-family: 'DM Mono', monospace;
+      font-size: 11px; letter-spacing: 1px;
+      color: var(--muted); margin-bottom: 24px;
+      min-height: 18px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .status-strip .spinner {
+      width: 10px; height: 10px; border-radius: 50%;
+      border: 1.5px solid transparent;
+      border-top-color: var(--accent);
+      animation: spin 0.8s linear infinite;
+      display: none;
+    }
+    .status-strip.loading .spinner { display: block; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Storyboard grid ───────────────────────────────────── */
+    .storyboard-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 24px;
+    }
+
+    #storyboard {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(var(--panel-w), 1fr));
+      gap: 24px;
+    }
+
+    /* ── Panel card ─────────────────────────────────────────── */
+    .panel-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+      opacity: 0; transform: translateY(20px);
+      animation: slideIn 0.5s ease forwards;
+    }
+    @keyframes slideIn {
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .panel-num {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+    }
+    .panel-num-badge {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 18px; letter-spacing: 2px;
+      color: var(--accent);
+    }
+    .panel-status-badge {
+      font-family: 'DM Mono', monospace;
+      font-size: 9px; letter-spacing: 2px; text-transform: uppercase;
+      padding: 3px 8px; border-radius: 4px;
+    }
+    .badge-loading { background: rgba(232,197,71,0.1); color: var(--accent); }
+    .badge-ready   { background: rgba(80,200,120,0.1); color: #50c878; }
+
+    /* Image container */
+    .panel-img-wrap {
+      position: relative; aspect-ratio: 3/2; overflow: hidden;
+      background: var(--surface2);
+    }
+    .panel-img-wrap img {
+      width: 100%; height: 100%; object-fit: cover;
+      display: block;
+      transition: transform 0.4s ease;
+    }
+    .panel-card:hover .panel-img-wrap img { transform: scale(1.03); }
+
+    /* Skeleton loader */
+    .skeleton {
+      width: 100%; height: 100%;
+      background: linear-gradient(90deg,
+        var(--surface2) 25%, var(--surface) 50%, var(--surface2) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.4s infinite;
+    }
+    @keyframes shimmer { to { background-position: -200% 0; } }
+
+    /* Panel body */
+    .panel-body { padding: 16px; }
+
+    .panel-scene-text {
+      font-size: 13px; line-height: 1.6; color: var(--text);
+      margin-bottom: 12px;
+    }
+
+    .prompt-toggle {
+      font-family: 'DM Mono', monospace;
+      font-size: 10px; letter-spacing: 1px; text-transform: uppercase;
+      color: var(--muted); cursor: pointer;
+      display: flex; align-items: center; gap: 6px;
+      user-select: none;
+      background: none; border: none; padding: 0;
+    }
+    .prompt-toggle:hover { color: var(--text); }
+    .prompt-toggle .arrow { transition: transform 0.2s; }
+    .prompt-toggle.open .arrow { transform: rotate(90deg); }
+
+    .prompt-detail {
+      display: none; margin-top: 10px;
+      background: var(--surface2);
+      border-left: 2px solid rgba(232,197,71,0.3);
+      border-radius: 0 6px 6px 0;
+      padding: 10px 14px;
+      font-family: 'DM Mono', monospace;
+      font-size: 11px; line-height: 1.6;
+      color: var(--muted);
+    }
+    .prompt-detail.open { display: block; }
+
+    /* ── Export button ──────────────────────────────────────── */
+    .btn-export {
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--muted);
+      font-family: 'DM Mono', monospace;
+      font-size: 11px; letter-spacing: 1px; text-transform: uppercase;
+      padding: 8px 16px; cursor: pointer;
+      transition: all 0.2s;
+      display: none;
+    }
+    .btn-export.visible { display: flex; align-items: center; gap: 6px; }
+    .btn-export:hover { border-color: rgba(232,197,71,0.3); color: var(--text); }
+
+    /* ── Error toast ────────────────────────────────────────── */
+    .toast {
+      position: fixed; bottom: 32px; right: 32px; z-index: 100;
+      background: var(--surface);
+      border: 1px solid rgba(224,80,80,0.3);
+      border-left: 3px solid var(--danger);
+      border-radius: var(--radius);
+      padding: 14px 18px;
+      font-size: 13px; color: var(--text);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+      transform: translateX(120%);
+      transition: transform 0.3s ease;
+      max-width: 320px;
+    }
+    .toast.show { transform: translateX(0); }
+
+    /* ── Responsive ─────────────────────────────────────────── */
+    @media (max-width: 640px) {
+      main { padding: 24px 20px; }
+      header { padding: 16px 20px; }
+      .logo-text { font-size: 22px; }
+      :root { --panel-w: 280px; }
+    }
+  </style>
+</head>
+
+<body>
+  <!-- ── Header ─────────────────────────────────────────────── -->
+  <header>
+    <div class="logo">
+      <span class="logo-text">PITCH VISUALIZER</span>
+      <span class="logo-sub">Narrative → Storyboard</span>
+    </div>
+    <div class="health-dot" id="healthDot" title="API status"></div>
+  </header>
+
+  <!-- ── Main ───────────────────────────────────────────────── -->
+  <main>
+
+    <!-- Input card -->
+    <div class="input-section">
+      <div class="section-label">Your Narrative</div>
+
+      <textarea id="narrativeInput"
+        placeholder="Paste your customer success story or sales narrative here (3–6 sentences works best)…"
+        rows="6"></textarea>
+
+      <div class="examples">
+        <span class="section-label" style="margin-bottom:0; align-self:center;">Try:</span>
+        <button class="example-pill" data-idx="0">☕ Coffee startup</button>
+        <button class="example-pill" data-idx="1">🤖 AI platform</button>
+        <button class="example-pill" data-idx="2">🌱 Sustainability</button>
+      </div>
+
+      <div class="controls">
+        <select class="style-select" id="styleSelect">
+          <option value="cinematic" selected>Cinematic</option>
+          <option value="digital art">Digital Art</option>
+          <option value="watercolor">Watercolor</option>
+          <option value="flat design">Flat Design</option>
+          <option value="noir">Noir</option>
+          <option value="isometric">Isometric</option>
+          <option value="anime">Anime</option>
+          <option value="photorealistic">Photorealistic</option>
+        </select>
+
+        <button class="btn-generate" id="generateBtn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <polygon points="5,3 19,12 5,21"/>
+          </svg>
+          Generate Storyboard
+        </button>
+
+        <span class="char-count" id="charCount">0 / 1200</span>
+      </div>
+    </div>
+
+    <!-- Progress -->
+    <div class="progress-bar-wrap" id="progressWrap">
+      <div class="progress-bar" id="progressBar"></div>
+    </div>
+
+    <!-- Status -->
+    <div class="status-strip" id="statusStrip">
+      <div class="spinner"></div>
+      <span id="statusText"></span>
+    </div>
+
+    <!-- Storyboard -->
+    <div class="storyboard-header">
+      <div class="section-label" id="boardLabel" style="display:none; margin-bottom:0">
+        Storyboard
+      </div>
+      <button class="btn-export" id="exportBtn">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/>
+        </svg>
+        Export HTML
+      </button>
+    </div>
+
+    <div id="storyboard"></div>
+  </main>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <!-- ── Scripts ─────────────────────────────────────────────── -->
+  <script>
+    // ── Example narratives ──────────────────────────────────────
+    const EXAMPLES = [
+      `Brewrise started as a tiny roastery in Portland with nothing but a vintage espresso machine and a dream. Within a year, they were drowning in manual order tracking across dozens of cafés and their team was exhausted. After adopting our platform, they automated their entire wholesale workflow and cut admin time by 70%. Today, Brewrise supplies over 200 cafés across the Pacific Northwest and their founder says they finally have time to focus on what they love — the craft.`,
+
+      `Acme AI struggled to bring their machine learning models to production, spending months on infrastructure instead of innovation. Their engineers were drowning in DevOps work while competitors shipped new features weekly. By migrating to our cloud-native MLOps platform, they reduced deployment time from weeks to hours and reclaimed over 40% of their engineering bandwidth. Acme AI now ships new model updates every sprint and their CTO calls it the single best infrastructure decision they've ever made.`,
+
+      `GreenLeaf Farms wanted to reduce water consumption by 30% across their 5,000-acre operation without sacrificing yield. Traditional irrigation systems were wasteful and their agronomists relied on gut feel and rainfall reports. With our precision agriculture sensors and AI-driven irrigation schedules, they cut water usage by 42% in the first season alone. GreenLeaf now operates as a model for sustainable farming across California, and their story has been featured in three national publications.`
+    ];
+
+    // ── DOM refs ────────────────────────────────────────────────
+    const narrativeInput = document.getElementById('narrativeInput');
+    const styleSelect    = document.getElementById('styleSelect');
+    const generateBtn    = document.getElementById('generateBtn');
+    const storyboard     = document.getElementById('storyboard');
+    const statusStrip    = document.getElementById('statusStrip');
+    const statusText     = document.getElementById('statusText');
+    const progressWrap   = document.getElementById('progressWrap');
+    const progressBar    = document.getElementById('progressBar');
+    const charCount      = document.getElementById('charCount');
+    const exportBtn      = document.getElementById('exportBtn');
+    const boardLabel     = document.getElementById('boardLabel');
+    const toast          = document.getElementById('toast');
+    const healthDot      = document.getElementById('healthDot');
+
+    let totalPanels = 0;
+    let completedPanels = 0;
+    let panelData = [];   // { text, prompt, src }
+
+    // ── Char counter ─────────────────────────────────────────────
+    narrativeInput.addEventListener('input', () => {
+      const l = narrativeInput.value.length;
+      charCount.textContent = `${l} / 1200`;
+      if (l > 1200) charCount.style.color = '#e05050';
+      else charCount.style.color = 'var(--muted)';
+    });
+
+    // ── Example pills ─────────────────────────────────────────────
+    document.querySelectorAll('.example-pill').forEach(pill => {
+      pill.addEventListener('click', () => {
+        narrativeInput.value = EXAMPLES[+pill.dataset.idx];
+        narrativeInput.dispatchEvent(new Event('input'));
+      });
+    });
+
+    // ── Health check ─────────────────────────────────────────────
+    fetch('/health').then(r => r.json()).then(d => {
+      if (d.anthropic_key || d.hf_token) healthDot.classList.add('ready');
+    }).catch(() => {});
+
+    // ── Generate ─────────────────────────────────────────────────
+    generateBtn.addEventListener('click', startGeneration);
+
+    function startGeneration() {
+      const text = narrativeInput.value.trim();
+      if (!text) { showToast('Please enter some narrative text first.'); return; }
+      if (text.length > 1200) { showToast('Text is too long — keep it under 1200 characters.'); return; }
+
+      // Reset UI
+      storyboard.innerHTML = '';
+      panelData = [];
+      totalPanels = 0; completedPanels = 0;
+      exportBtn.classList.remove('visible');
+      boardLabel.style.display = 'none';
+      progressWrap.classList.add('visible');
+      progressBar.style.width = '5%';
+      setStatus('loading', 'Segmenting narrative…');
+      generateBtn.disabled = true;
+
+      const body = JSON.stringify({ text, style: styleSelect.value });
+
+      // Use fetch+ReadableStream for POST-based SSE
+      fetch('/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body
+      }).then(res => {
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let buf = '';
+
+        function pump() {
+          reader.read().then(({ done, value }) => {
+            if (done) return;
+            buf += decoder.decode(value, { stream: true });
+            const lines = buf.split('\n');
+            buf = lines.pop(); // keep incomplete line
+            for (const line of lines) {
+              if (line.startsWith('data: ')) {
+                try { handleEvent(JSON.parse(line.slice(6))); } catch(e) {}
+              }
+            }
+            pump();
+          });
+        }
+        pump();
+      }).catch(err => {
+        setStatus('', 'Error connecting to server.');
+        generateBtn.disabled = false;
+        showToast('Connection error: ' + err.message);
+      });
+    }
+
+    function handleEvent(evt) {
+      switch (evt.type) {
+        case 'start':
+          totalPanels = evt.total;
+          setStatus('loading', `Generating ${totalPanels} panels in ${evt.style} style…`);
+          progressBar.style.width = '10%';
+          boardLabel.style.display = 'flex';
+          // Pre-create skeleton cards
+          for (let i = 0; i < totalPanels; i++) {
+            panelData.push({ text: '', prompt: '', src: '' });
+            storyboard.appendChild(buildSkeletonCard(i));
+          }
+          break;
+
+        case 'segment':
+          updatePanelText(evt.index, evt.text);
+          break;
+
+        case 'prompt':
+          updatePanelPrompt(evt.index, evt.enhanced);
+          setStatus('loading', `Panel ${evt.index + 1} of ${totalPanels} — engineering prompt…`);
+          break;
+
+        case 'image':
+          updatePanelImage(evt.index, evt.src);
+          completedPanels++;
+          const pct = 10 + (completedPanels / totalPanels) * 88;
+          progressBar.style.width = pct + '%';
+          setStatus('loading', `Panel ${completedPanels} of ${totalPanels} complete`);
+          break;
+
+        case 'done':
+          progressBar.style.width = '100%';
+          setTimeout(() => progressWrap.classList.remove('visible'), 800);
+          setStatus('', `✓ ${totalPanels} panels generated`);
+          generateBtn.disabled = false;
+          exportBtn.classList.add('visible');
+          break;
+
+        case 'error':
+          setStatus('', `Error: ${evt.message}`);
+          generateBtn.disabled = false;
+          showToast(evt.message);
+          break;
+      }
+    }
+
+    // ── Panel builders ────────────────────────────────────────────
+    function buildSkeletonCard(i) {
+      const card = document.createElement('div');
+      card.className = 'panel-card';
+      card.id = `panel-${i}`;
+      card.innerHTML = `
+        <div class="panel-num">
+          <span class="panel-num-badge">PANEL ${i + 1}</span>
+          <span class="panel-status-badge badge-loading">Generating…</span>
+        </div>
+        <div class="panel-img-wrap"><div class="skeleton"></div></div>
+        <div class="panel-body">
+          <div class="panel-scene-text" id="scene-text-${i}">
+            <div class="skeleton" style="height:14px; border-radius:4px; margin-bottom:8px"></div>
+            <div class="skeleton" style="height:14px; border-radius:4px; width:70%"></div>
+          </div>
+        </div>`;
+      return card;
+    }
+
+    function updatePanelText(i, text) {
+      panelData[i].text = text;
+      const el = document.getElementById(`scene-text-${i}`);
+      if (el) el.innerHTML = `<p>${escHtml(text)}</p>`;
+    }
+
+    function updatePanelPrompt(i, prompt) {
+      panelData[i].prompt = prompt;
+      const card = document.getElementById(`panel-${i}`);
+      if (!card) return;
+      const body = card.querySelector('.panel-body');
+      // Add prompt toggle if not already there
+      if (!body.querySelector('.prompt-toggle')) {
+        const toggle = document.createElement('button');
+        toggle.className = 'prompt-toggle';
+        toggle.innerHTML = `<span class="arrow">▶</span> AI Prompt`;
+        const detail = document.createElement('div');
+        detail.className = 'prompt-detail';
+        detail.id = `prompt-detail-${i}`;
+        toggle.addEventListener('click', () => {
+          detail.classList.toggle('open');
+          toggle.classList.toggle('open');
+        });
+        body.appendChild(toggle);
+        body.appendChild(detail);
+      }
+      const detail = document.getElementById(`prompt-detail-${i}`);
+      if (detail) detail.textContent = prompt;
+    }
+
+    function updatePanelImage(i, src) {
+      panelData[i].src = src;
+      const card = document.getElementById(`panel-${i}`);
+      if (!card) return;
+      const wrap = card.querySelector('.panel-img-wrap');
+      const badge = card.querySelector('.panel-status-badge');
+      if (wrap) {
+        const img = document.createElement('img');
+        img.src = src;
+        img.alt = `Panel ${i + 1}`;
+        img.loading = 'lazy';
+        wrap.innerHTML = '';
+        wrap.appendChild(img);
+      }
+      if (badge) {
+        badge.textContent = 'Ready';
+        badge.className = 'panel-status-badge badge-ready';
+      }
+    }
+
+    // ── Export ────────────────────────────────────────────────────
+    exportBtn.addEventListener('click', exportHTML);
+
+    function exportHTML() {
+      const style = styleSelect.value;
+      let panels = panelData.map((p, i) => `
+        <div class="panel">
+          <div class="panel-num">Panel ${i + 1}</div>
+          <img src="${p.src}" alt="Panel ${i + 1}" />
+          <div class="caption">${escHtml(p.text)}</div>
+          <details><summary>AI Prompt</summary><p class="prompt-text">${escHtml(p.prompt)}</p></details>
+        </div>`).join('');
+
+      const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Pitch Storyboard — ${style}</title>
+  <style>
+    body { font-family: Georgia, serif; background: #0d0d14; color: #e8e8f0; margin: 0; padding: 40px; }
+    h1 { font-size: 32px; letter-spacing: 4px; text-transform: uppercase; color: #e8c547; margin-bottom: 8px; }
+    .meta { color: rgba(232,232,240,0.4); font-size: 12px; font-family: monospace; margin-bottom: 40px; }
+    .storyboard { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px,1fr)); gap: 24px; }
+    .panel { background: #111118; border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; overflow: hidden; }
+    .panel-num { padding: 10px 14px; font-family: monospace; font-size: 12px; color: #e8c547; border-bottom: 1px solid rgba(255,255,255,0.06); }
+    .panel img { width:100%; display:block; aspect-ratio:3/2; object-fit:cover; }
+    .caption { padding: 14px; font-size: 13px; line-height:1.6; }
+    details { padding: 0 14px 14px; }
+    summary { font-size: 11px; font-family:monospace; color: rgba(232,232,240,0.4); cursor:pointer; }
+    .prompt-text { font-family:monospace; font-size:11px; color:rgba(232,232,240,0.5); margin-top:6px; line-height:1.6; }
+  </style>
+</head>
+<body>
+  <h1>Pitch Storyboard</h1>
+  <div class="meta">Style: ${style} &nbsp;·&nbsp; Panels: ${panelData.length} &nbsp;·&nbsp; Generated: ${new Date().toLocaleString()}</div>
+  <div class="storyboard">${panels}</div>
+</body>
+</html>`;
+
+      const blob = new Blob([html], { type: 'text/html' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `storyboard-${style}-${Date.now()}.html`;
+      a.click();
+    }
+
+    // ── Helpers ───────────────────────────────────────────────────
+    function setStatus(mode, msg) {
+      statusText.textContent = msg;
+      statusStrip.className = 'status-strip' + (mode === 'loading' ? ' loading' : '');
+    }
+
+    function showToast(msg) {
+      toast.textContent = msg;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 4000);
+    }
+
+    function escHtml(str) {
+      return (str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+  </script>
+</body>
+</html>
